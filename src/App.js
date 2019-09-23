@@ -1,6 +1,5 @@
 import React, { Component } from "react";
-
-import authors from "./data.js";
+import axios from "axios";
 
 // Components
 import Sidebar from "./Sidebar";
@@ -10,17 +9,29 @@ import AuthorDetail from "./AuthorDetail";
 class App extends Component {
   state = {
     currentAuthor: null,
-    filteredAuthors: authors
+    filteredAuthors: [],
+    authors: [],
+    loading: true
   };
 
-  selectAuthor = author => this.setState({ currentAuthor: author });
-
+  selectAuthor = async author => {
+    this.setState({ loading: true });
+    try {
+      let ID = author.id;
+      const fetchData = await axios.get(
+        "https://the-index-api.herokuapp.com/api/authors/" + ID
+      );
+      this.setState({ currentAuthor: fetchData.data, loading: false });
+    } catch (error) {
+      console.error(error);
+    }
+  };
   unselectAuthor = () => this.setState({ currentAuthor: null });
 
   filterAuthors = query => {
     query = query.toLowerCase();
-    let filteredAuthors = authors.filter(author => {
-      return `${author.first_name} ${author.last_name}`
+    let filteredAuthors = this.state.authors.filter(author => {
+      return `${this.state.authors.first_name} ${this.state.authors.last_name}`
         .toLowerCase()
         .includes(query);
     });
@@ -28,7 +39,9 @@ class App extends Component {
   };
 
   getContentView = () => {
-    if (this.state.currentAuthor) {
+    if (this.state.loading) {
+      return <h1>"Loading"</h1>;
+    } else if (this.state.currentAuthor) {
       return <AuthorDetail author={this.state.currentAuthor} />;
     } else {
       return (
@@ -40,6 +53,19 @@ class App extends Component {
       );
     }
   };
+
+  async componentDidMount() {
+    try {
+      const fetchData = await axios.get(
+        "https://the-index-api.herokuapp.com/api/authors/"
+      );
+      this.setState({ loading: false });
+      this.setState({ authors: fetchData.data });
+      this.setState({ filteredAuthors: fetchData.data });
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   render() {
     return (
